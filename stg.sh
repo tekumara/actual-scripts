@@ -2,6 +2,12 @@
 
 # Clean CSV exported from UI (nb: set the UI to order from oldest to latest).
 
+if [ "$1" ]; then
+    outfile="${1}.actual.csv"
+else
+    outfile="/dev/stdout"
+fi
+
 duckdb -csv -c "
     select '' as Num, strftime(Date, '%d/%m/%Y') as Date,
     -- format by stripping out leading transaction type and datetime (eg: 20Dec08:47)
@@ -13,8 +19,8 @@ duckdb -csv -c "
         Description, '^(Visa Purchase( O/Seas)?|Visa Credit( Overseas)?|Osko Withdrawal|Osko Deposit|Sct Deposit|Eftpos Debit|Eftpos Credit|Tfr Wdl BPAY Internet|(Cardless )?Atm Withdrawal( -Wbc)?|Internet Deposit|Internet Withdrawal)'
     ) as Notes,
     '' as Category,'' as S,
-    Debit as Outflow,
-    Credit as Inflow,
+    Debit,
+    Credit,
     Balance,
     from read_csv_auto('/dev/stdin');
-"
+" < "${1:-/dev/stdin}" > "$outfile"
