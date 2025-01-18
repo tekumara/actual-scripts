@@ -19,3 +19,25 @@ This location can be configured from the cog icon on the Files page.
 ## Server
 
 The server keeps its copy of files inside the sqlite db at _user-files/\*.blob_.
+
+## Imports
+
+Dupes will be matched during import but this requires the correct fields are selected.
+If the fields are changed in the UI after the file is loaded, it won't rematch.
+Close the UI (or restart Actual) and open the import modal again.
+
+[Matching is fuzzy](https://github.com/actualbudget/actual/blob/cde81da72c214ee5b068fa487e5a715e5f2dbffb/packages/loot-core/src/server/accounts/sync.ts#L506) and dates don't need to be exact. This can mean an imported transaction is matched when it shouldn't be. Review matches in the Import modal, and click the left icon on the row to toggle between ignore, update, and add.
+
+## Rules
+
+If you set the category on a transaction for the same Payee three times then a rule will be automatically created.
+
+See [Rules](https://actualbudget.org/docs/budgeting/rules/).
+
+## Known issues & requested features
+
+- [[Feature] Resizable columns #536](https://github.com/actualbudget/actual/issues/536)
+- [[Bug]: Transaction order is incorrect after importing data with the same date #3928](https://github.com/actualbudget/actual/issues/3928)
+- [[Bug]: Running balance not visible when sortin by oldest transaction first #3808](https://github.com/actualbudget/actual/issues/3808)
+- [[Feature] Create New Category on the fly #3947](https://github.com/actualbudget/actual/issues/3947)
+- [[Feature] "Make Transfer" Operation Keyboard Shortcut #4109](https://github.com/actualbudget/actual/issues/4109)
