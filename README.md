@@ -1,4 +1,10 @@
-# actual
+# actual budget scripts
+
+Scripts for cleaning transactions before importing them into [Actual Budget](https://actualbudget.org/).
+
+The rest of this readme describes Actual Budget.
+
+## Client vs server
 
 > Actual has two parts: the client (the stuff you see and interact with), and an optional sync server. The server is what allows syncing your budget file between devices and allows for bank syncing. A full list of what does and does not require the sync server can be found in [this table](https://actualbudget.org/docs/install).
 
