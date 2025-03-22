@@ -26,7 +26,20 @@ Dupes will be matched during import but this requires the correct fields are sel
 If the fields are changed in the UI after the file is loaded, it won't rematch.
 Close the UI (or restart Actual) and open the import modal again.
 
-[Matching is fuzzy](https://github.com/actualbudget/actual/blob/cde81da72c214ee5b068fa487e5a715e5f2dbffb/packages/loot-core/src/server/accounts/sync.ts#L506) and dates don't need to be exact. This can mean an imported transaction is matched when it shouldn't be. Review matches in the Import modal, and click the left icon on the row to toggle between ignore, update, and add.
+Dupe [matching is fuzzy](https://github.com/actualbudget/actual/blob/cde81da72c214ee5b068fa487e5a715e5f2dbffb/packages/loot-core/src/server/accounts/sync.ts#L506) and dates don't need to be exact. Fuzzy matching looks 7 days ahead and 7 days back. This can mean an [imported transaction is matched when it shouldn't](https://github.com/actualbudget/actual/issues/2668#issuecomment-2081316772) when transactions are within a week of each other, and the amount matches eg:
+
+1. 01/03/2025 Coffee -6.23 marked as a new transaction and imported
+2. 24/02/2025 Coffee -6.23 marked as an already imported transaction
+
+Review matches in the Import modal, and click the left icon on the row to toggle between ignore, update, and add.
+
+If you uncheck `Merge with existing transactions` the matching won't happen, but you'll end up duplicates if you are importing transactions that already exist.
+
+`Clear transactions on import` will set the `clear` checkbox on the imported transaction.
+
+## Transfers
+
+When making a transfer do not create a rule to rename the payees. It applies incorrectly.
 
 ## Rules
 
@@ -41,3 +54,4 @@ See [Rules](https://actualbudget.org/docs/budgeting/rules/).
 - [[Bug]: Running balance not visible when sortin by oldest transaction first #3808](https://github.com/actualbudget/actual/issues/3808)
 - [[Feature] Create New Category on the fly #3947](https://github.com/actualbudget/actual/issues/3947)
 - [[Feature] "Make Transfer" Operation Keyboard Shortcut #4109](https://github.com/actualbudget/actual/issues/4109)
+- [[Feature] Export report data as csv #3272](https://github.com/actualbudget/actual/issues/3272)
