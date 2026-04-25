@@ -34,7 +34,7 @@ Commands:
                                 List transactions for an account.
   make-transfer|transfer [options]
                                 Find uncategorized transfer pairs and link them.
-  find <payee> <txn-date>       Find transactions by exact payee name and ISO date (YYYY-MM-DD).
+  find <payee> <txn-date>       Find transactions by exact payee name and date.
   split [options] <entries...>  Split a transaction into sub-transactions.
   report [options] <name>       Render a custom report by name.
   qif-import [options] <account> <qif-path>
@@ -82,7 +82,11 @@ Limit the listing to a date range:
 
 ```bash
 abctl transactions "Everyday Checking" --start 2026-04-01 --end 2026-04-30
+# or using the budget date format
+abctl txns "Everyday Checking" --start 01/04/2026 --end 30/04/2026
 ```
+
+`--start` and `--end` accept either `YYYY-MM-DD` or your budget date format.
 
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match.
 
@@ -110,13 +114,17 @@ Split by transaction id:
 abctl split --transaction-id abc123 "Groceries run" "Food" -45.60 "Petrol" "Transport" -30
 ```
 
-Split by exact payee and ISO date:
+Split by exact payee and date:
 
 ```bash
 abctl split --payee "Example Store" --txn-date 2026-04-05 "Groceries run" "Food" -45.60
 ```
 
+`--txn-date` accepts either `YYYY-MM-DD` or your budget date format.
+
 Each split entry is a repeated `<notes> <category> <amount>` triplet. Quote notes or category names when they contain spaces.
+
+`find <payee> <txn-date>` also accepts either `YYYY-MM-DD` or your budget date format.
 
 Use `--add-remainder-split` to append one extra split for any remaining difference. The extra split uses the parent transaction category, so it only works when the original transaction is already categorized.
 

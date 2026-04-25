@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildTransactionsTable, sortListedTransactions } from "../src/transactions.js";
+import { buildTransactionsTable, commandTransactions, sortListedTransactions } from "../src/transactions.js";
 
 function makeMetadata() {
   return {
@@ -141,4 +141,70 @@ test("buildTransactionsTable renders payment, deposit, split category, and runni
     "",
     "1,457.50",
   ]);
+});
+
+test("commandTransactions accepts start and end dates in the budget date format", async () => {
+  const calls = [];
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    logs.push(args.join(" "));
+  };
+
+  try {
+    await commandTransactions(
+      {
+        account: "Checking",
+        start: "05/04/2026",
+        end: "06/04/2026",
+      },
+      {
+        fetchMetadata: async () => makeMetadata(),
+        fetchPreferenceValue: async (preferenceId) =>
+          preferenceId === "dateFormat" ? "DD/MM/YYYY" : null,
+        renderCliTable: (table) => JSON.stringify(table),
+        withActual: async (fn) =>
+          fn({
+            actualApi: {
+              getAccounts: async () => [{ id: "checking", name: "Checking" }],
+              getTransactions: async (accountId, start, end) => {
+                calls.push({ type: "getTransactions", accountId, start, end });
+                return [
+                  {
+                    id: "txn-1",
+                    account: "checking",
+                    payee: "payee-2",
+                    amount: -1250,
+                    category: "groceries",
+                    date: "2026-04-05",
+                    notes: "milk",
+                  },
+                ];
+              },
+              getAccountBalance: async (accountId, cutoff) => {
+                calls.push({ type: "getAccountBalance", accountId, cutoff });
+                return 50000;
+              },
+            },
+          }),
+      },
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.deepEqual(calls, [
+    {
+      type: "getTransactions",
+      accountId: "checking",
+      start: "2026-04-05",
+      end: "2026-04-06",
+    },
+    {
+      type: "getAccountBalance",
+      accountId: "checking",
+      cutoff: "2026-04-04",
+    },
+  ]);
+  assert.equal(logs.length, 1);
 });

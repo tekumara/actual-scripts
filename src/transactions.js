@@ -1,7 +1,11 @@
-import { addDays } from "./date-utils.js";
+import { addDays, normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
 import { formatAmount, formatBudgetDate } from "./reporting.js";
 import { normalizeTransaction, toFiniteNumber, truthy } from "./transaction-data.js";
+
+function fail(message) {
+  throw new Error(message);
+}
 
 function payeeLabel(transaction, metadata) {
   return metadata.payeesById.get(transaction.payeeId)?.name ?? "";
@@ -85,8 +89,15 @@ export async function commandTransactions(
   await withActual(async ({ actualApi }) => {
     const accounts = await actualApi.getAccounts();
     const account = resolveImportAccount(accounts, args.account);
+    const dateFormat = await fetchPreferenceValue("dateFormat");
+    const start = args.start ? normalizeDateInput(args.start, { dateFormat }) : null;
+    const end = args.end ? normalizeDateInput(args.end, { dateFormat }) : null;
+    if (start && end && start > end) {
+      fail("--start must be on or before --end.");
+    }
+
     const transactions = sortListedTransactions(
-      await actualApi.getTransactions(account.id, args.start, args.end),
+      await actualApi.getTransactions(account.id, start ?? undefined, end ?? undefined),
     );
 
     if (transactions.length === 0) {
@@ -94,11 +105,10 @@ export async function commandTransactions(
       return;
     }
 
-    const balanceCutoff = addDays(args.start ?? transactions[0].date, -1);
-    const [openingBalance, metadata, dateFormat] = await Promise.all([
+    const balanceCutoff = addDays(start ?? transactions[0].date, -1);
+    const [openingBalance, metadata] = await Promise.all([
       actualApi.getAccountBalance(account.id, balanceCutoff),
       fetchMetadata(),
-      fetchPreferenceValue("dateFormat"),
     ]);
 
     console.log(

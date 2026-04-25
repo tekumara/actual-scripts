@@ -5,7 +5,7 @@ import { execFile as execFileCallback } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
-import { parseIsoDate } from "./date-utils.js";
+import { normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
 import os from "node:os";
 import path from "node:path";
@@ -440,20 +440,18 @@ function buildProgram() {
     .alias("txns")
     .description("List transactions for an account.")
     .argument("<account>")
-    .option("--start <date>", "start date (YYYY-MM-DD)")
-    .option("--end <date>", "end date (YYYY-MM-DD)")
-    .addHelpText("after", ACCOUNT_MATCHING_HELP)
+    .option("--start <date>", "start date (YYYY-MM-DD or budget format)")
+    .option("--end <date>", "end date (YYYY-MM-DD or budget format)")
+    .addHelpText(
+      "after",
+      [
+        ACCOUNT_MATCHING_HELP,
+        "",
+        "Date input:",
+        "  --start and --end accept YYYY-MM-DD or the budget date format.",
+      ].join("\n"),
+    )
     .action(async (account, options) => {
-      if (options.start) {
-        parseIsoDate(options.start);
-      }
-      if (options.end) {
-        parseIsoDate(options.end);
-      }
-      if (options.start && options.end && options.start > options.end) {
-        fail("--start must be on or before --end.");
-      }
-
       await commandTransactions(
         {
           account,
@@ -485,9 +483,17 @@ function buildProgram() {
 
   program
     .command("find")
-    .description("Find transactions by exact payee name and ISO date (YYYY-MM-DD).")
+    .description("Find transactions by exact payee name and date.")
     .argument("<payee>")
     .argument("<txn-date>")
+    .addHelpText(
+      "after",
+      [
+        "",
+        "Date input:",
+        "  <txn-date> accepts YYYY-MM-DD or the budget date format.",
+      ].join("\n"),
+    )
     .action(async (payee, txnDate) => {
       await commandFind({ payee, txnDate });
     });
@@ -561,15 +567,19 @@ function buildProgram() {
 }
 
 async function commandFind({ payee, txnDate }) {
-  parseIsoDate(txnDate);
   await withActual(async () => {
     const [metadata, dateFormat] = await Promise.all([
       fetchMetadata(),
       fetchPreferenceValue("dateFormat"),
     ]);
-    const transactions = await fetchTransactions({ start: txnDate, end: txnDate, splitMode: "inline" });
+    const normalizedTxnDate = normalizeDateInput(txnDate, { dateFormat });
+    const transactions = await fetchTransactions({
+      start: normalizedTxnDate,
+      end: normalizedTxnDate,
+      splitMode: "inline",
+    });
     const matches = transactions.filter(
-      (transaction) => transaction.date === txnDate && payeeName(transaction, metadata) === payee,
+      (transaction) => transaction.date === normalizedTxnDate && payeeName(transaction, metadata) === payee,
     );
 
     if (matches.length === 0) {

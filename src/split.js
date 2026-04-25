@@ -1,7 +1,7 @@
 import { InvalidArgumentError } from "commander";
 import { randomUUID } from "node:crypto";
 
-import { parseIsoDate } from "./date-utils.js";
+import { normalizeDateInput, parseIsoDate } from "./date-utils.js";
 import { formatAmount, payeeName } from "./reporting.js";
 
 function fail(message) {
@@ -61,7 +61,7 @@ export function findGroupedTransaction(transactions, transactionId) {
   return null;
 }
 
-export async function resolveSplitTarget(args, metadata, { fetchTransactions }) {
+export async function resolveSplitTarget(args, metadata, { fetchTransactions, dateFormat = null }) {
   if (args.transactionId) {
     const transactions = await fetchTransactions({ splitMode: "grouped" });
     const match = findGroupedTransaction(transactions, args.transactionId);
@@ -74,14 +74,16 @@ export async function resolveSplitTarget(args, metadata, { fetchTransactions }) 
     return match.transaction;
   }
 
-  parseIsoDate(args.txnDate);
+  const normalizedTxnDate = normalizeDateInput(args.txnDate, { dateFormat });
+  parseIsoDate(normalizedTxnDate);
   const transactions = await fetchTransactions({
-    start: args.txnDate,
-    end: args.txnDate,
+    start: normalizedTxnDate,
+    end: normalizedTxnDate,
     splitMode: "inline",
   });
   const matches = transactions.filter(
-    (transaction) => transaction.date === args.txnDate && payeeName(transaction, metadata) === args.payee,
+    (transaction) =>
+      transaction.date === normalizedTxnDate && payeeName(transaction, metadata) === args.payee,
   );
 
   if (matches.length === 0) {
@@ -105,16 +107,15 @@ export async function commandSplit(
     withActual,
   },
 ) {
-  if (args.txnDate) {
-    parseIsoDate(args.txnDate);
-  }
-
   await withActual(async ({ actualApi }) => {
     const [metadata, dateFormat] = await Promise.all([
       fetchMetadata(),
       fetchPreferenceValue("dateFormat"),
     ]);
-    const transaction = await resolveSplitTarget(args, metadata, { fetchTransactions });
+    const transaction = await resolveSplitTarget(args, metadata, {
+      fetchTransactions,
+      dateFormat,
+    });
 
     console.log("Splitting transaction:");
     printTransaction(transaction, metadata, { dateFormat });
@@ -258,7 +259,7 @@ export function addSplitCommand(program, deps) {
     .description("Split a transaction into sub-transactions.")
     .option("--transaction-id <id>")
     .option("--payee <payee>")
-    .option("--txn-date <date>")
+    .option("--txn-date <date>", "transaction date (YYYY-MM-DD or budget format)")
     .option(
       "--add-remainder-split",
       "append an extra split for any remainder using the parent transaction category",
@@ -275,6 +276,9 @@ export function addSplitCommand(program, deps) {
         "Remainder handling:",
         "  --add-remainder-split appends one extra split for the exact remainder amount",
         "  using the parent transaction category.",
+        "",
+        "Date input:",
+        "  --txn-date accepts YYYY-MM-DD or the budget date format.",
       ].join("\n"),
     )
     .action(async (entries, options) => {

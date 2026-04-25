@@ -208,6 +208,70 @@ test("commandSplit updates the matching transaction with mapped subtransactions"
   assert.ok(logs.includes("Done."));
 });
 
+test("commandSplit accepts --txn-date in the budget date format", async () => {
+  const calls = [];
+  const fetchCalls = [];
+  const originalLog = console.log;
+  console.log = () => {};
+
+  try {
+    await commandSplit(
+      {
+        transactionId: null,
+        payee: "Store",
+        txnDate: "05/04/2026",
+        splitEntries: [{ notes: "Groceries run", categoryName: "Food", amount: -4560 }],
+      },
+      {
+        fetchMetadata: async () => ({
+          categoriesById: new Map([["cat-1", { id: "cat-1", name: "Food" }]]),
+          payeesById: new Map([["payee-1", { id: "payee-1", name: "Store" }]]),
+          accountsById: new Map(),
+        }),
+        fetchPreferenceValue: async () => "DD/MM/YYYY",
+        fetchTransactions: async (args) => {
+          fetchCalls.push(args);
+          return [
+            {
+              id: "txn-1",
+              accountId: "acct-1",
+              payeeId: "payee-1",
+              notes: "Original note",
+              amount: -4560,
+              date: "2026-04-05",
+              subtransactions: [],
+            },
+          ];
+        },
+        printTransaction: () => {},
+        withActual: async (fn) =>
+          fn({
+            actualApi: {
+              internal: {
+                send: async (name, payload) => {
+                  calls.push({ name, payload });
+                },
+              },
+              sync: async () => {},
+            },
+          }),
+      },
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.deepEqual(fetchCalls, [
+    {
+      start: "2026-04-05",
+      end: "2026-04-05",
+      splitMode: "inline",
+    },
+  ]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, "transactions-batch-update");
+});
+
 test("resolveEffectiveSplitEntries appends a remainder split using the parent category", () => {
   const result = resolveEffectiveSplitEntries(
     {
