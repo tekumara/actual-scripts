@@ -30,6 +30,8 @@ Commands:
   budgets                       List budgets and their sync ids.
   accounts                      List accounts and their current balances.
   uncategorized                 List uncategorized transactions across all accounts.
+  transactions|txns [options] <account>
+                                List transactions for an account.
   make-transfer|transfer [options]
                                 Find uncategorized transfer pairs and link them.
   find <payee> <txn-date>       Find transactions by exact payee name and ISO date (YYYY-MM-DD).
@@ -65,6 +67,24 @@ If the split amounts do not add up, you can append the exact remainder as one ex
 ```bash
 abctl split --add-remainder-split --transaction-id abc123 "Agent fees" "Expenses" -90
 ```
+
+## Transactions
+
+List all transactions for an account:
+
+```bash
+abctl transactions "Everyday Checking"
+# or
+abctl txns "Everyday Checking"
+```
+
+Limit the listing to a date range:
+
+```bash
+abctl transactions "Everyday Checking" --start 2026-04-01 --end 2026-04-30
+```
+
+`<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match.
 
 ## Make Transfer
 

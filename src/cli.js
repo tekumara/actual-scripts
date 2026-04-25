@@ -24,6 +24,7 @@ import { normalizeParsedQifTransactions } from "./qif.js";
 import { parseStGeorgeCsvToImportTransactions } from "./st-george.js";
 import { renderCliTable, toHtml, toTsv } from "./table-rendering.js";
 import { commandMakeTransfer } from "./transfer.js";
+import { commandTransactions } from "./transactions.js";
 import { commandUncategorized } from "./uncategorized.js";
 import { extractQueryData, normalizeTransaction, toFiniteNumber } from "./transaction-data.js";
 
@@ -437,6 +438,45 @@ function buildProgram() {
     .description("List uncategorized transactions across all accounts.")
     .action(async () => {
       await commandUncategorized({ fetchMetadata, renderCliTable, withActual });
+    });
+
+  program
+    .command("transactions")
+    .alias("txns")
+    .description("List transactions for an account.")
+    .argument("<account>")
+    .option("--start <date>", "start date (YYYY-MM-DD)")
+    .option("--end <date>", "end date (YYYY-MM-DD)")
+    .addHelpText(
+      "after",
+      [
+        "",
+        "Account matching:",
+        "  <account> may be an Actual account id or account name.",
+        "  Matching prefers exact id, then exact name, then unique case-insensitive name,",
+        "  then a unique case-insensitive substring match.",
+      ].join("\n"),
+    )
+    .action(async (account, options) => {
+      const parsedStart = options.start ? parseIsoDate(options.start) : null;
+      const parsedEnd = options.end ? parseIsoDate(options.end) : null;
+      if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+        fail("--start must be on or before --end.");
+      }
+
+      await commandTransactions(
+        {
+          account,
+          start: options.start ?? null,
+          end: options.end ?? null,
+        },
+        {
+          fetchMetadata,
+          fetchPreferenceValue,
+          renderCliTable,
+          withActual,
+        },
+      );
     });
 
   program
