@@ -1,12 +1,8 @@
 import { formatAmount, formatBudgetDate } from "./reporting.js";
-import { extractQueryData, normalizeTransaction } from "./transaction-data.js";
+import { extractQueryData, normalizeTransaction, truthy } from "./transaction-data.js";
 
 function fail(message) {
   throw new Error(message);
-}
-
-function truthy(value) {
-  return value === true || value === 1 || value === "1";
 }
 
 function accountLabel(accountId, metadata) {

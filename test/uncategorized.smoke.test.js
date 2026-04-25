@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { truthy } from "../src/transaction-data.js";
 import { buildUncategorizedTransactionsTable } from "../src/uncategorized.js";
 
 const RUN_SMOKE = process.env.ABCTL_RUN_SMOKE_TEST === "1";
@@ -15,10 +16,6 @@ function requiredEnv(name) {
     throw new Error(`${name} is required when running the uncategorized smoke test.`);
   }
   return value;
-}
-
-function truthy(value) {
-  return value === true || value === 1 || value === "1";
 }
 
 function toFiniteNumber(value, fallback = 0) {

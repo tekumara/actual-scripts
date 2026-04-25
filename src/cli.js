@@ -5,6 +5,7 @@ import { execFile as execFileCallback } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
+import { parseIsoDate } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
 import os from "node:os";
 import path from "node:path";
@@ -26,9 +27,23 @@ import { renderCliTable, toHtml, toTsv } from "./table-rendering.js";
 import { commandMakeTransfer } from "./transfer.js";
 import { commandTransactions } from "./transactions.js";
 import { commandUncategorized } from "./uncategorized.js";
-import { extractQueryData, normalizeTransaction, toFiniteNumber } from "./transaction-data.js";
+import { extractQueryData, normalizeTransaction, toFiniteNumber, truthy } from "./transaction-data.js";
 
 const execFile = promisify(execFileCallback);
+
+const ACCOUNT_MATCHING_HELP = [
+  "",
+  "Account matching:",
+  "  <account> may be an Actual account id or account name.",
+  "  Matching prefers exact id, then exact name, then unique case-insensitive name,",
+  "  then a unique case-insensitive substring match.",
+].join("\n");
+const QIF_IMPORT_HELP = [
+  ACCOUNT_MATCHING_HELP,
+  "",
+  "Date parsing:",
+  "  Ambiguous QIF dates use the budget's dateFormat preference when available.",
+].join("\n");
 
 const SERVER_URL = process.env.ACTUAL_SERVER_URL ?? "http://localhost:5007";
 const DEFAULT_DATA_DIR = "/tmp/actual";
@@ -76,26 +91,6 @@ async function getActualApi() {
 
 function fail(message) {
   throw new Error(message);
-}
-
-function truthy(value) {
-  return value === true || value === 1 || value === "1";
-}
-
-function parseIsoDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    fail(`Invalid date ${JSON.stringify(value)}. Expected YYYY-MM-DD.`);
-  }
-  const [year, month, day] = value.split("-").map(Number);
-  const parsed = new Date(year, month - 1, day);
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month - 1 ||
-    parsed.getDate() !== day
-  ) {
-    fail(`Invalid date ${JSON.stringify(value)}.`);
-  }
-  return parsed;
 }
 
 function normalizeReport(rawReport) {
@@ -447,28 +442,23 @@ function buildProgram() {
     .argument("<account>")
     .option("--start <date>", "start date (YYYY-MM-DD)")
     .option("--end <date>", "end date (YYYY-MM-DD)")
-    .addHelpText(
-      "after",
-      [
-        "",
-        "Account matching:",
-        "  <account> may be an Actual account id or account name.",
-        "  Matching prefers exact id, then exact name, then unique case-insensitive name,",
-        "  then a unique case-insensitive substring match.",
-      ].join("\n"),
-    )
+    .addHelpText("after", ACCOUNT_MATCHING_HELP)
     .action(async (account, options) => {
-      const parsedStart = options.start ? parseIsoDate(options.start) : null;
-      const parsedEnd = options.end ? parseIsoDate(options.end) : null;
-      if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+      if (options.start) {
+        parseIsoDate(options.start);
+      }
+      if (options.end) {
+        parseIsoDate(options.end);
+      }
+      if (options.start && options.end && options.start > options.end) {
         fail("--start must be on or before --end.");
       }
 
       await commandTransactions(
         {
           account,
-          start: options.start ?? null,
-          end: options.end ?? null,
+          start: options.start,
+          end: options.end,
         },
         {
           fetchMetadata,
@@ -538,19 +528,7 @@ function buildProgram() {
       "--swap-payee-and-memo",
       "use QIF memo values as payees before optional note import",
     )
-    .addHelpText(
-      "after",
-      [
-        "",
-        "Account matching:",
-        "  <account> may be an Actual account id or account name.",
-        "  Matching prefers exact id, then exact name, then unique case-insensitive name,",
-        "  then a unique case-insensitive substring match.",
-        "",
-        "Date parsing:",
-        "  Ambiguous QIF dates use the budget's dateFormat preference when available.",
-      ].join("\n"),
-    )
+    .addHelpText("after", QIF_IMPORT_HELP)
     .action(async (account, qifPath, options) => {
       await commandQifImport({
         account,
@@ -569,16 +547,7 @@ function buildProgram() {
     .argument("<csv-path>")
     .option("--dry-run", "preview reconciliation without writing transactions")
     .option("--json", "print mapped ImportTransactionEntity objects and exit")
-    .addHelpText(
-      "after",
-      [
-        "",
-        "Account matching:",
-        "  <account> may be an Actual account id or account name.",
-        "  Matching prefers exact id, then exact name, then unique case-insensitive name,",
-        "  then a unique case-insensitive substring match.",
-      ].join("\n"),
-    )
+    .addHelpText("after", ACCOUNT_MATCHING_HELP)
     .action(async (account, csvPath, options) => {
       await commandStGeorgeImport({
         account,

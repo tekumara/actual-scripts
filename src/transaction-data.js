@@ -1,3 +1,7 @@
+export function truthy(value) {
+  return value === true || value === 1 || value === "1";
+}
+
 export function toFiniteNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;

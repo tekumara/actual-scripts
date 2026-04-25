@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { commandSplit } from "../src/split.js";
-import { extractQueryData, normalizeTransaction } from "../src/transaction-data.js";
+import { extractQueryData, normalizeTransaction, truthy } from "../src/transaction-data.js";
 
 const RUN_SMOKE = process.env.ABCTL_RUN_SMOKE_TEST === "1";
 const RUN_WRITE = process.env.ABCTL_SMOKE_WRITE === "1";
@@ -17,10 +17,6 @@ function requiredEnv(name) {
     throw new Error(`${name} is required when running the split smoke test.`);
   }
   return value;
-}
-
-function truthy(value) {
-  return value === true || value === 1 || value === "1";
 }
 
 function toFiniteNumber(value, fallback = 0) {

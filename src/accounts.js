@@ -1,9 +1,5 @@
 import { formatAmount, formatBudgetDate } from "./reporting.js";
-import { extractQueryData, normalizeDateValue } from "./transaction-data.js";
-
-function truthy(value) {
-  return value === true || value === 1 || value === "1";
-}
+import { extractQueryData, normalizeDateValue, truthy } from "./transaction-data.js";
 
 export function buildLatestTransactionDateByAccount(transactions) {
   const latestByAccount = new Map();

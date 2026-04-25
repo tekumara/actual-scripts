@@ -1,3 +1,5 @@
+import { formatIsoDate, parseIsoDate } from "./date-utils.js";
+
 const AMOUNT_FORMATTER = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -18,29 +20,6 @@ function fail(message) {
 function localToday() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function parseIsoDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    fail(`Invalid date ${JSON.stringify(value)}. Expected YYYY-MM-DD.`);
-  }
-  const [year, month, day] = value.split("-").map(Number);
-  const parsed = new Date(year, month - 1, day);
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month - 1 ||
-    parsed.getDate() !== day
-  ) {
-    fail(`Invalid date ${JSON.stringify(value)}.`);
-  }
-  return parsed;
-}
-
-function formatIsoDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function monthStart(date, offset) {
