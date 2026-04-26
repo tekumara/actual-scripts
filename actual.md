@@ -30,7 +30,9 @@ Dupes will be matched during import but this requires the correct fields are sel
 If the fields are changed in the UI after the file is loaded, it won't rematch.
 Close the UI (or restart Actual) and open the import modal again.
 
-Dupe [matching is fuzzy](https://github.com/actualbudget/actual/blob/cde81da72c214ee5b068fa487e5a715e5f2dbffb/packages/loot-core/src/server/accounts/sync.ts#L506) and dates don't need to be exact. Fuzzy matching looks 7 days ahead and 7 days back. This can mean an [imported transaction is matched when it shouldn't](https://github.com/actualbudget/actual/issues/2668#issuecomment-2081316772) when transactions are within a week of each other, and the amount matches eg:
+### Fuzzy matching
+
+[Fuzzy matching](https://github.com/actualbudget/actual/blob/cde81da72c214ee5b068fa487e5a715e5f2dbffb/packages/loot-core/src/server/accounts/sync.ts#L506) looks 7 days ahead and 7 days back. This can mean an [imported transaction is matched when it shouldn't](https://github.com/actualbudget/actual/issues/2668#issuecomment-2081316772) when transactions are within a week of each other, and the amount matches eg:
 
 1. 01/03/2025 Coffee -6.23 marked as a new transaction and imported
 2. 24/02/2025 Coffee -6.23 marked as an already imported transaction
@@ -46,6 +48,32 @@ If you uncheck `Merge with existing transactions` the matching won't happen with
 1. Delete any existing transactions for the day being imported.
 1. Check `Merge with existing transactions` - this will allow you to override de-dupes within the import set
 1. Find updates and greyed out already imported transactions in the import set and change them to `+`
+
+### `imported_id`
+
+`imported_id` is Actual's highest-fidelity match key for imports.
+
+For file imports, Actual tries matching in this order:
+
+1. exact `imported_id` match in the same account
+2. fuzzy match on same account, same amount, and date within ±7 days, preferring the same payee
+
+Important: for file imports, if the incoming transaction has an `imported_id` and it does **not** exactly match an existing transaction's `imported_id`, Actual's fuzzy matching will only consider existing transactions with no `imported_id`.
+
+That means two imports of the same underlying bank data can fail to match if they generate different `imported_id` values, for example:
+
+- first import: `bank1|2026-04-24|Hellofresh...`
+- second import: `bank2|2026-04-24|Hellofresh...`
+
+Even if the date, amount, and payee all look equivalent, Actual will not fuzzy-match those imported transactions against each other because both sides already have different non-null `imported_id` values.
+
+Practical effect:
+
+- stable, bank-specific `imported_id` values are good for repeat imports from the same source
+- changing importer shape or `imported_id` format breaks matching with older imports
+- omitting `imported_id` entirely makes Actual rely on fuzzy matching instead
+
+For transactions imported via the UI `imported_id` is set to null.
 
 ## Transfers
 

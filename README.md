@@ -39,6 +39,8 @@ Commands:
   report [options] <name>       Render a custom report by name.
   qif-import [options] <account> <qif-path>
                                 Import a QIF file into an Actual account.
+  csv-import [options] <account> <csv-path>
+                                Import a generic CSV into an Actual account.
   st-george-import [options] <account> <csv-path>
                                 Import a St.George CSV into an Actual account.
   help [command]                display help for command
@@ -133,6 +135,50 @@ Each split entry is a repeated `<notes> <category> <amount>` triplet. Quote note
 `find <payee> <txn-date>` also accepts either `YYYY-MM-DD` or your budget date format.
 
 Use `--add-remainder-split` to append one extra split for any remaining difference. The extra split uses the parent transaction category, so it only works when the original transaction is already categorized.
+
+## CSV Import
+
+Preview the mapped `ImportTransactionEntity` objects:
+
+```bash
+abctl csv-import <account> path/to/import.csv --json
+```
+
+Preview reconciliation without writing:
+
+```bash
+abctl csv-import <account> path/to/import.csv --dry-run
+```
+
+Preview/import without setting `imported_id` so Actual relies on fuzzy matching:
+
+```bash
+abctl csv-import <account> path/to/import.csv --dry-run --no-import-id
+```
+
+Import the CSV into an account:
+
+```bash
+abctl csv-import <account> path/to/import.csv
+```
+
+The CSV must contain these headers:
+
+- `Date`
+- `Payee`
+- `Notes`
+- `Debit`
+- `Credit`
+
+Optional header:
+
+- `Balance`
+
+`Date` accepts either `YYYY-MM-DD` or your budget date format. `Notes` are imported into transaction notes, but are not included in `imported_id`. When `Balance` is present, it is used to strengthen row uniqueness and `imported_id` stability.
+
+Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
+
+`<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
 
 ## St.George Import
 

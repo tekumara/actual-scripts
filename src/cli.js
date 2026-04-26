@@ -5,6 +5,7 @@ import { execFile as execFileCallback } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
+import { parseCsvImportToImportTransactions } from "./csv-import.js";
 import { normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
 import { renderImportResult } from "./import-results.js";
@@ -45,6 +46,20 @@ const QIF_IMPORT_HELP = [
   "",
   "Date parsing:",
   "  Ambiguous QIF dates use the budget's dateFormat preference when available.",
+].join("\n");
+const CSV_IMPORT_HELP = [
+  ACCOUNT_MATCHING_HELP,
+  "",
+  "CSV columns:",
+  "  Required headers: Date, Payee, Notes, Debit, Credit.",
+  "  Optional header: Balance (used to strengthen row uniqueness and imported_id stability).",
+  "  Notes are imported as transaction notes but excluded from imported_id.",
+  "",
+  "Matching:",
+  "  Use --no-import-id to omit imported_id and rely on Actual's fuzzy matching.",
+  "",
+  "Date parsing:",
+  "  Ambiguous CSV dates use the budget's dateFormat preference when available.",
 ].join("\n");
 
 const SERVER_URL = process.env.ACTUAL_SERVER_URL ?? "http://localhost:5007";
@@ -540,6 +555,27 @@ function buildProgram() {
     });
 
   program
+    .command("csv-import")
+    .description(
+      "Import a generic CSV with Date, Payee, Notes, Debit, and Credit columns into an Actual account. Balance is optional and improves duplicate detection.",
+    )
+    .argument("<account>")
+    .argument("<csv-path>")
+    .option("--dry-run", "preview reconciliation without writing transactions")
+    .option("--json", "print mapped ImportTransactionEntity objects and exit")
+    .option("--no-import-id", "omit imported_id and rely on Actual fuzzy matching")
+    .addHelpText("after", CSV_IMPORT_HELP)
+    .action(async (account, csvPath, options) => {
+      await commandCsvImport({
+        account,
+        csvPath,
+        dryRun: options.dryRun ?? false,
+        json: options.json ?? false,
+        importId: options.importId ?? true,
+      });
+    });
+
+  program
     .command("st-george-import")
     .description("Import a St.George CSV into an Actual account.")
     .argument("<account>")
@@ -646,6 +682,48 @@ async function commandReport(args) {
     }
 
     console.log(renderCliTable(reportTable));
+  });
+}
+
+async function commandCsvImport(args) {
+  await withActual(async ({ actualApi }) => {
+    const [accounts, dateFormat, csvText] = await Promise.all([
+      actualApi.getAccounts(),
+      fetchBudgetDateFormat(actualApi),
+      readFile(args.csvPath, "utf8"),
+    ]);
+    const account = resolveImportAccount(accounts, args.account);
+    const transactions = parseCsvImportToImportTransactions(csvText, {
+      accountId: account.id,
+      dateFormat,
+      includeImportedId: args.importId,
+    });
+
+    if (args.json) {
+      console.log(JSON.stringify(transactions, null, 2));
+      return;
+    }
+
+    const result = await actualApi.importTransactions(account.id, transactions, {
+      defaultCleared: true,
+      dryRun: args.dryRun,
+    });
+
+    if (!args.dryRun) {
+      await actualApi.sync();
+    }
+
+    console.log(
+      renderImportResult({
+        account: {
+          id: account.id,
+          name: account.name ?? "?",
+        },
+        mapped: transactions.length,
+        dryRun: args.dryRun,
+        result,
+      }),
+    );
   });
 }
 
