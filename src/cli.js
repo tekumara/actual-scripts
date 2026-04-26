@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
 import { normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
+import { renderImportResult } from "./import-results.js";
 import { fetchBudgetDateFormat } from "./preferences.js";
 import os from "node:os";
 import path from "node:path";
@@ -669,19 +670,15 @@ async function commandStGeorgeImport(args) {
     }
 
     console.log(
-      JSON.stringify(
-        {
-          account: {
-            id: account.id,
-            name: account.name ?? "?",
-          },
-          mapped: transactions.length,
-          dryRun: args.dryRun,
-          result,
+      renderImportResult({
+        account: {
+          id: account.id,
+          name: account.name ?? "?",
         },
-        null,
-        2,
-      ),
+        mapped: transactions.length,
+        dryRun: args.dryRun,
+        result,
+      }),
     );
   });
 }
@@ -728,19 +725,15 @@ async function commandQifImport(args) {
     }
 
     console.log(
-      JSON.stringify(
-        {
-          account: {
-            id: account.id,
-            name: account.name ?? "?",
-          },
-          mapped: transactions.length,
-          dryRun: args.dryRun,
-          result,
+      renderImportResult({
+        account: {
+          id: account.id,
+          name: account.name ?? "?",
         },
-        null,
-        2,
-      ),
+        mapped: transactions.length,
+        dryRun: args.dryRun,
+        result,
+      }),
     );
   });
 }
