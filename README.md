@@ -88,6 +88,12 @@ abctl txns "Everyday Checking" --start 01/04/2026 --end 30/04/2026
 
 `--start` and `--end` accept either `YYYY-MM-DD` or your budget date format.
 
+Output tab-separated text instead of the terminal table:
+
+```bash
+abctl transactions "Everyday Checking" --tsv
+```
+
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match.
 
 ## Make Transfer

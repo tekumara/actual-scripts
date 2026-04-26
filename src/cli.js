@@ -434,6 +434,7 @@ function buildProgram() {
     .argument("<account>")
     .option("--start <date>", "start date (YYYY-MM-DD or budget format)")
     .option("--end <date>", "end date (YYYY-MM-DD or budget format)")
+    .option("--tsv", "output tab-separated text")
     .addHelpText(
       "after",
       [
@@ -449,10 +450,12 @@ function buildProgram() {
           account,
           start: options.start,
           end: options.end,
+          tsv: options.tsv ?? false,
         },
         {
           fetchMetadata,
           renderCliTable,
+          toTsv,
           withActual,
         },
       );

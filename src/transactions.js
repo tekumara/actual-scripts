@@ -85,7 +85,7 @@ export function buildTransactionsTable(
 
 export async function commandTransactions(
   args,
-  { fetchMetadata, renderCliTable, withActual },
+  { fetchMetadata, renderCliTable, toTsv = null, withActual },
 ) {
   await withActual(async ({ actualApi }) => {
     const accounts = await actualApi.getAccounts();
@@ -112,14 +112,17 @@ export async function commandTransactions(
       fetchMetadata(),
     ]);
 
-    console.log(
-      renderCliTable(
-        buildTransactionsTable(transactions, metadata, {
-          accountName: account.name ?? account.id,
-          dateFormat,
-          openingBalance,
-        }),
-      ),
-    );
+    const table = buildTransactionsTable(transactions, metadata, {
+      accountName: account.name ?? account.id,
+      dateFormat,
+      openingBalance,
+    });
+
+    if (args.tsv) {
+      console.log(toTsv == null ? renderCliTable(table) : toTsv(table));
+      return;
+    }
+
+    console.log(renderCliTable(table));
   });
 }

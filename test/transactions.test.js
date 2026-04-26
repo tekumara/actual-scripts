@@ -212,3 +212,62 @@ test("commandTransactions accepts start and end dates in the budget date format"
   ]);
   assert.equal(logs.length, 1);
 });
+
+test("commandTransactions outputs TSV when requested", async () => {
+  const logs = [];
+  const originalLog = console.log;
+  let renderCliTableCalls = 0;
+  let toTsvCalls = 0;
+
+  console.log = (...args) => {
+    logs.push(args.join(" "));
+  };
+
+  try {
+    await commandTransactions(
+      {
+        account: "Checking",
+        tsv: true,
+      },
+      {
+        fetchMetadata: async () => makeMetadata(),
+        renderCliTable: () => {
+          renderCliTableCalls += 1;
+          return "cli output";
+        },
+        toTsv: (table) => {
+          toTsvCalls += 1;
+          assert.equal(table.title, "Transactions");
+          return "tsv output";
+        },
+        withActual: async (fn) =>
+          fn({
+            actualApi: {
+              internal: {
+                send: async () => ({ dateFormat: "DD/MM/YYYY" }),
+              },
+              getAccounts: async () => [{ id: "checking", name: "Checking" }],
+              getTransactions: async () => [
+                {
+                  id: "txn-1",
+                  account: "checking",
+                  payee: "payee-2",
+                  amount: -1250,
+                  category: "groceries",
+                  date: "2026-04-05",
+                  notes: "milk",
+                },
+              ],
+              getAccountBalance: async () => 50000,
+            },
+          }),
+      },
+    );
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.equal(renderCliTableCalls, 0);
+  assert.equal(toTsvCalls, 1);
+  assert.deepEqual(logs, ["tsv output"]);
+});
