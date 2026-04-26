@@ -7,6 +7,7 @@ import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
 import { normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
+import { fetchBudgetDateFormat } from "./preferences.js";
 import os from "node:os";
 import path from "node:path";
 import { addSplitCommand } from "./split.js";
@@ -322,16 +323,6 @@ async function fetchReports() {
   return reports.map(normalizeReport);
 }
 
-async function fetchPreferenceValue(preferenceId) {
-  const actualApi = await getActualApi();
-  const preferences = extractQueryData(
-    await actualApi.runQuery(
-      actualApi.q("preferences").filter({ id: preferenceId }).select(["id", "value"]),
-    ),
-  );
-  return preferences[0]?.value ?? null;
-}
-
 function printTransaction(transaction, metadata, { dateFormat } = {}) {
   console.log(`  id:       ${transaction.id}`);
   console.log(`  account:  ${accountName(transaction, metadata)}`);
@@ -460,7 +451,6 @@ function buildProgram() {
         },
         {
           fetchMetadata,
-          fetchPreferenceValue,
           renderCliTable,
           withActual,
         },
@@ -500,7 +490,6 @@ function buildProgram() {
 
   addSplitCommand(program, {
     fetchMetadata,
-    fetchPreferenceValue,
     fetchTransactions,
     printTransaction,
     withActual,
@@ -570,7 +559,7 @@ async function commandFind({ payee, txnDate }) {
   await withActual(async () => {
     const [metadata, dateFormat] = await Promise.all([
       fetchMetadata(),
-      fetchPreferenceValue("dateFormat"),
+      fetchBudgetDateFormat(actualApi),
     ]);
     const normalizedTxnDate = normalizeDateInput(txnDate, { dateFormat });
     const transactions = await fetchTransactions({
@@ -701,7 +690,7 @@ async function commandQifImport(args) {
   await withActual(async ({ actualApi }) => {
     const accounts = await actualApi.getAccounts();
     const account = resolveImportAccount(accounts, args.account);
-    const dateFormat = await fetchPreferenceValue("dateFormat");
+    const dateFormat = await fetchBudgetDateFormat(actualApi);
     const parseResult = await actualApi.internal.send("transactions-parse-file", {
       filepath: args.qifPath,
       options: {

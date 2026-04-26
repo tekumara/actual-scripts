@@ -117,7 +117,6 @@ test("commandSplit updates the matching transaction with mapped subtransactions"
           payeesById: new Map(),
           accountsById: new Map(),
         }),
-        fetchPreferenceValue: async () => "DD/MM/YYYY",
         fetchTransactions: async () => [
           {
             id: "txn-1",
@@ -137,6 +136,9 @@ test("commandSplit updates the matching transaction with mapped subtransactions"
             actualApi: {
               internal: {
                 send: async (name, payload) => {
+                  if (name === "preferences/get") {
+                    return { dateFormat: "DD/MM/YYYY" };
+                  }
                   calls.push({ name, payload });
                 },
               },
@@ -228,7 +230,6 @@ test("commandSplit accepts --txn-date in the budget date format", async () => {
           payeesById: new Map([["payee-1", { id: "payee-1", name: "Store" }]]),
           accountsById: new Map(),
         }),
-        fetchPreferenceValue: async () => "DD/MM/YYYY",
         fetchTransactions: async (args) => {
           fetchCalls.push(args);
           return [
@@ -249,6 +250,9 @@ test("commandSplit accepts --txn-date in the budget date format", async () => {
             actualApi: {
               internal: {
                 send: async (name, payload) => {
+                  if (name === "preferences/get") {
+                    return { dateFormat: "DD/MM/YYYY" };
+                  }
                   calls.push({ name, payload });
                 },
               },
@@ -336,7 +340,6 @@ test("commandSplit can append a remainder split using the parent transaction cat
         payeesById: new Map(),
         accountsById: new Map(),
       }),
-      fetchPreferenceValue: async () => "DD/MM/YYYY",
       fetchTransactions: async () => [
         {
           id: "txn-1",
@@ -355,6 +358,9 @@ test("commandSplit can append a remainder split using the parent transaction cat
           actualApi: {
             internal: {
               send: async (name, payload) => {
+                if (name === "preferences/get") {
+                  return { dateFormat: "DD/MM/YYYY" };
+                }
                 calls.push({ name, payload });
               },
             },
@@ -479,7 +485,6 @@ test("addSplitCommand documents how entries are expressed", () => {
   const program = new Command();
   addSplitCommand(program, {
     fetchMetadata: async () => ({}),
-    fetchPreferenceValue: async () => null,
     fetchTransactions: async () => [],
     printTransaction: () => {},
     withActual: async () => {},

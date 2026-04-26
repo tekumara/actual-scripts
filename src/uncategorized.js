@@ -1,3 +1,4 @@
+import { fetchBudgetDateFormat } from "./preferences.js";
 import { accountName, formatAmount, formatBudgetDate, payeeName } from "./reporting.js";
 import { extractQueryData, normalizeTransaction } from "./transaction-data.js";
 
@@ -67,12 +68,12 @@ export async function buildUncategorizedTransactionsTable(actualApi, metadata, {
 
 export async function commandUncategorized({ fetchMetadata, renderCliTable, withActual }) {
   await withActual(async ({ actualApi }) => {
-    const [metadata, syncedPrefs] = await Promise.all([
+    const [metadata, dateFormat] = await Promise.all([
       fetchMetadata(),
-      actualApi.internal.send("preferences/get"),
+      fetchBudgetDateFormat(actualApi),
     ]);
     const table = await buildUncategorizedTransactionsTable(actualApi, metadata, {
-      dateFormat: syncedPrefs?.dateFormat ?? null,
+      dateFormat,
     });
 
     if (table.rows.length === 0) {

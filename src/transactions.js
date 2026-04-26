@@ -1,5 +1,6 @@
 import { addDays, normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
+import { fetchBudgetDateFormat } from "./preferences.js";
 import { formatAmount, formatBudgetDate } from "./reporting.js";
 import { normalizeTransaction, toFiniteNumber, truthy } from "./transaction-data.js";
 
@@ -84,12 +85,12 @@ export function buildTransactionsTable(
 
 export async function commandTransactions(
   args,
-  { fetchMetadata, fetchPreferenceValue, renderCliTable, withActual },
+  { fetchMetadata, renderCliTable, withActual },
 ) {
   await withActual(async ({ actualApi }) => {
     const accounts = await actualApi.getAccounts();
     const account = resolveImportAccount(accounts, args.account);
-    const dateFormat = await fetchPreferenceValue("dateFormat");
+    const dateFormat = await fetchBudgetDateFormat(actualApi);
     const start = args.start ? normalizeDateInput(args.start, { dateFormat }) : null;
     const end = args.end ? normalizeDateInput(args.end, { dateFormat }) : null;
     if (start && end && start > end) {

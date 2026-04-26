@@ -2,6 +2,7 @@ import { InvalidArgumentError } from "commander";
 import { randomUUID } from "node:crypto";
 
 import { normalizeDateInput, parseIsoDate } from "./date-utils.js";
+import { fetchBudgetDateFormat } from "./preferences.js";
 import { formatAmount, payeeName } from "./reporting.js";
 
 function fail(message) {
@@ -101,7 +102,6 @@ export async function commandSplit(
   args,
   {
     fetchMetadata,
-    fetchPreferenceValue,
     fetchTransactions,
     printTransaction,
     withActual,
@@ -110,7 +110,7 @@ export async function commandSplit(
   await withActual(async ({ actualApi }) => {
     const [metadata, dateFormat] = await Promise.all([
       fetchMetadata(),
-      fetchPreferenceValue("dateFormat"),
+      fetchBudgetDateFormat(actualApi),
     ]);
     const transaction = await resolveSplitTarget(args, metadata, {
       fetchTransactions,

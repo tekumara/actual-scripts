@@ -194,12 +194,6 @@ async function runSmokeCase(t) {
           await actualApi.getCategories(),
           await actualApi.getPayees(),
         ),
-      fetchPreferenceValue: async (preferenceId) => {
-        if (preferenceId !== "dateFormat") {
-          return null;
-        }
-        return "DD/MM/YYYY";
-      },
       fetchTransactions,
       printTransaction: () => {},
       withActual: async (fn) =>

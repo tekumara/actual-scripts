@@ -1,3 +1,4 @@
+import { fetchBudgetDateFormat } from "./preferences.js";
 import { formatAmount, formatBudgetDate } from "./reporting.js";
 import { extractQueryData, normalizeTransaction, truthy } from "./transaction-data.js";
 
@@ -116,14 +117,6 @@ function validForTransfer(left, right) {
 
 function send(actualApi, name, args) {
   return actualApi.internal.send(name, args);
-}
-
-async function fetchBudgetDateFormat(actualApi) {
-  const syncedPrefs = await send(actualApi, "preferences/get");
-  if (syncedPrefs && typeof syncedPrefs === "object") {
-    return syncedPrefs.dateFormat ?? null;
-  }
-  return null;
 }
 
 async function fetchUncategorizedTransactions(actualApi) {

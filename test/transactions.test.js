@@ -160,12 +160,16 @@ test("commandTransactions accepts start and end dates in the budget date format"
       },
       {
         fetchMetadata: async () => makeMetadata(),
-        fetchPreferenceValue: async (preferenceId) =>
-          preferenceId === "dateFormat" ? "DD/MM/YYYY" : null,
         renderCliTable: (table) => JSON.stringify(table),
         withActual: async (fn) =>
           fn({
             actualApi: {
+              internal: {
+                send: async (name) => {
+                  assert.equal(name, "preferences/get");
+                  return { dateFormat: "DD/MM/YYYY" };
+                },
+              },
               getAccounts: async () => [{ id: "checking", name: "Checking" }],
               getTransactions: async (accountId, start, end) => {
                 calls.push({ type: "getTransactions", accountId, start, end });

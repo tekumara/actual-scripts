@@ -1,3 +1,4 @@
+import { fetchBudgetDateFormat } from "./preferences.js";
 import { formatAmount, formatBudgetDate } from "./reporting.js";
 import { extractQueryData, normalizeDateValue, truthy } from "./transaction-data.js";
 
@@ -18,10 +19,6 @@ export function buildLatestTransactionDateByAccount(transactions) {
   }
 
   return latestByAccount;
-}
-
-function normalizeDateFormatPreference(rawValue) {
-  return typeof rawValue === "string" ? rawValue : rawValue?.dateFormat ?? null;
 }
 
 export function buildAccountsTable(accounts, latestDates = new Map(), { dateFormat } = {}) {
@@ -96,7 +93,7 @@ export async function commandAccounts({ renderCliTable, withActual }) {
       return;
     }
 
-    const [rows, latestDates, syncedPrefs] = await Promise.all([
+    const [rows, latestDates, dateFormat] = await Promise.all([
       Promise.all(
         accounts.map(async (account) => ({
           ...account,
@@ -104,13 +101,13 @@ export async function commandAccounts({ renderCliTable, withActual }) {
         })),
       ),
       fetchLatestTransactionDateByAccount(actualApi),
-      actualApi.internal.send("preferences/get"),
+      fetchBudgetDateFormat(actualApi),
     ]);
 
     console.log(
       renderCliTable(
         buildAccountsTable(rows, latestDates, {
-          dateFormat: normalizeDateFormatPreference(syncedPrefs),
+          dateFormat,
         }),
       ),
     );
