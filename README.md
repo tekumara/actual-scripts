@@ -138,27 +138,17 @@ Use `--add-remainder-split` to append one extra split for any remaining differen
 
 ## CSV Import
 
-Preview the mapped `ImportTransactionEntity` objects:
-
 ```bash
+# Preview the mapped ImportTransactionEntity objects
 abctl csv-import <account> path/to/import.csv --json
-```
 
-Preview reconciliation without writing:
-
-```bash
+# Preview reconciliation without writing
 abctl csv-import <account> path/to/import.csv --dry-run
-```
 
-Preview/import without setting `imported_id` so Actual relies on fuzzy matching:
-
-```bash
+# Preview/import without imported_id so Actual relies on fuzzy matching
 abctl csv-import <account> path/to/import.csv --dry-run --no-import-id
-```
 
-Import the CSV into an account:
-
-```bash
+# Import the CSV into an account
 abctl csv-import <account> path/to/import.csv
 ```
 
@@ -174,7 +164,7 @@ Optional header:
 
 - `Balance`
 
-`Date` accepts either `YYYY-MM-DD` or your budget date format. `Notes` are imported into transaction notes, but are not included in `imported_id`. When `Balance` is present, it is used to strengthen row uniqueness and `imported_id` stability.
+`Date` accepts either `YYYY-MM-DD` or your budget date format. `Debit` and `Credit` must be non-negative amounts without signs. `Notes` are imported into transaction notes, but are not included in `imported_id`. When `Balance` is present, it is used to strengthen row uniqueness and `imported_id` stability.
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
 

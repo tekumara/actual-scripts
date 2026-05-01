@@ -21,18 +21,14 @@ export function buildImportSummaryTable({ account, mapped, dryRun, result }) {
       makeRow(["Added transactions", result.added.length]),
       makeRow(["Errors", result.errors.length]),
       makeRow(["Updated", result.updated.length]),
-      makeRow(["Updated preview", result.updatedPreview.length]),
+      makeRow(["Preview matches", result.updatedPreview.length]),
     ],
   };
 }
 
-export function buildUpdatedPreviewTable(result) {
+export function buildPreviewMatchesTable(result) {
   return {
-    title: "Updated preview transactions",
-    subtitle:
-      result.updatedPreview.length > 0
-        ? "Matched imported transactions considered during reconciliation"
-        : "No matched imported transactions.",
+    title: "Preview matches",
     columns: [
       { label: "Date", align: "left" },
       { label: "Imported payee", align: "left" },
@@ -61,10 +57,11 @@ function renderErrors(errors) {
 }
 
 export function renderImportResult({ account, mapped, dryRun, result }) {
-  const sections = [
-    renderCliTable(buildImportSummaryTable({ account, mapped, dryRun, result })),
-    renderCliTable(buildUpdatedPreviewTable(result)),
-  ];
+  const sections = [renderCliTable(buildImportSummaryTable({ account, mapped, dryRun, result }))];
+
+  if (result.updatedPreview.length > 0) {
+    sections.push(renderCliTable(buildPreviewMatchesTable(result)));
+  }
 
   const errorSection = renderErrors(result.errors);
   if (errorSection) {

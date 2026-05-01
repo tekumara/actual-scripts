@@ -3,7 +3,7 @@ import test from "node:test";
 
 import {
   buildImportSummaryTable,
-  buildUpdatedPreviewTable,
+  buildPreviewMatchesTable,
   renderImportResult,
 } from "../src/import-results.js";
 
@@ -50,15 +50,15 @@ test("buildImportSummaryTable reports requested import counts", () => {
       ["Added transactions", "2"],
       ["Errors", "1"],
       ["Updated", "1"],
-      ["Updated preview", "2"],
+      ["Preview matches", "2"],
     ],
   );
 });
 
-test("buildUpdatedPreviewTable projects updated preview transactions into table rows", () => {
-  const table = buildUpdatedPreviewTable(result);
+test("buildPreviewMatchesTable projects preview matches into table rows", () => {
+  const table = buildPreviewMatchesTable(result);
 
-  assert.equal(table.title, "Updated preview transactions");
+  assert.equal(table.title, "Preview matches");
   assert.deepEqual(
     table.rows.map((row) => row.cells),
     [
@@ -78,8 +78,27 @@ test("renderImportResult includes summary, preview table, and error messages", (
 
   assert.match(rendered, /Import result/);
   assert.match(rendered, /Mapped transactions/);
-  assert.match(rendered, /Updated preview transactions/);
+  assert.match(rendered, /Preview matches/);
   assert.match(rendered, /Hellofresh/);
   assert.match(rendered, /Xero Salary/);
   assert.match(rendered, /Duplicate imported_id/);
+});
+
+test("renderImportResult omits updated preview section when there are no updated preview transactions", () => {
+  const rendered = renderImportResult({
+    account,
+    mapped: 12,
+    dryRun: true,
+    result: {
+      errors: [],
+      added: [],
+      updated: [],
+      updatedPreview: [],
+    },
+  });
+
+  assert.match(rendered, /Import preview/);
+  assert.match(rendered, /Mapped transactions/);
+  assert.doesNotMatch(rendered, /Matched imported transactions considered during reconciliation/);
+  assert.doesNotMatch(rendered, /No matched imported transactions/);
 });

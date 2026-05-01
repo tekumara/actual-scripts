@@ -53,6 +53,7 @@ const CSV_IMPORT_HELP = [
   "CSV columns:",
   "  Required headers: Date, Payee, Notes, Debit, Credit.",
   "  Optional header: Balance (used to strengthen row uniqueness and imported_id stability).",
+  "  Debit and Credit must be non-negative amounts without signs.",
   "  Notes are imported as transaction notes but excluded from imported_id.",
   "",
   "Matching:",
@@ -571,7 +572,7 @@ function buildProgram() {
         csvPath,
         dryRun: options.dryRun ?? false,
         json: options.json ?? false,
-        importId: options.importId ?? true,
+        includeImportId: options.importId !== false,
       });
     });
 
@@ -696,7 +697,7 @@ async function commandCsvImport(args) {
     const transactions = parseCsvImportToImportTransactions(csvText, {
       accountId: account.id,
       dateFormat,
-      includeImportedId: args.importId,
+      includeImportId: args.includeImportId,
     });
 
     if (args.json) {

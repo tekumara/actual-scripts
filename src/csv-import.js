@@ -96,31 +96,17 @@ function parseCsvAmount(value, lineNumber, fieldName) {
     return null;
   }
 
-  let normalized = raw.replace(/,/g, "");
-  let sign = 1;
-
-  if (normalized.startsWith("(") && normalized.endsWith(")")) {
-    normalized = normalized.slice(1, -1);
-    sign = -1;
+  const normalized = raw.replace(/,/g, "").replace(/^\$/, "");
+  const match = /^(?:(\d+)(?:\.(\d{1,2}))?|\.(\d{1,2}))$/.exec(normalized);
+  if (!match) {
+    fail(
+      `Invalid ${fieldName} amount ${JSON.stringify(value)} on CSV line ${lineNumber}. Use a non-negative amount without signs.`,
+    );
   }
 
-  if (normalized.startsWith("$")) {
-    normalized = normalized.slice(1);
-  }
-  if (normalized.startsWith("+")) {
-    normalized = normalized.slice(1);
-  }
-
-  if (!/^-?\d*(?:\.\d{0,2})?$/.test(normalized) || ["", ".", "-"].includes(normalized)) {
-    fail(`Invalid ${fieldName} amount ${JSON.stringify(value)} on CSV line ${lineNumber}.`);
-  }
-
-  const negative = normalized.startsWith("-") ? -1 : 1;
-  const unsigned = normalized.replace(/^-/, "");
-  const [wholePart = "", fractionPart = ""] = unsigned.split(".");
-  const whole = wholePart === "" ? "0" : wholePart;
-  const fraction = fractionPart.padEnd(2, "0").slice(0, 2);
-  return sign * negative * (Number(whole) * 100 + Number(fraction || "0"));
+  const [, wholePart = "0", fractionPart = "", leadingDecimalFraction = ""] = match;
+  const fraction = (fractionPart || leadingDecimalFraction).padEnd(2, "0");
+  return Number(wholePart) * 100 + Number(fraction);
 }
 
 function parseCsvImportDate(value, lineNumber, { dateFormat } = {}) {
@@ -148,13 +134,13 @@ function transactionAmountFromRow(row) {
     return credit;
   }
   if (nonZeroDebit) {
-    return debit > 0 ? -debit : debit;
+    return -debit;
   }
   if (hasCredit) {
     return credit;
   }
   if (hasDebit) {
-    return debit > 0 ? -debit : debit;
+    return -debit;
   }
   return 0;
 }
@@ -174,8 +160,8 @@ function importedIdFingerprintParts(row, isoDate) {
   return parts;
 }
 
-function buildImportedId(row, isoDate, occurrence) {
-  const parts = importedIdFingerprintParts(row, isoDate);
+function buildImportedId(fingerprintParts, occurrence) {
+  const parts = [...fingerprintParts];
   if (occurrence > 1) {
     parts.push(`dup:${occurrence}`);
   }
@@ -205,7 +191,7 @@ export function parseCsvImport(text) {
 
 export function mapCsvImportRowsToImportTransactions(
   rows,
-  { accountId, dateFormat = null, includeImportedId = true } = {},
+  { accountId, dateFormat = null, includeImportId = true } = {},
 ) {
   const normalizedAccountId = String(accountId ?? "").trim();
   if (!normalizedAccountId) {
@@ -219,7 +205,8 @@ export function mapCsvImportRowsToImportTransactions(
     const payeeName = trimRequired(row.Payee, row.__line, "Payee");
     const notes = trimToUndefined(row.Notes);
     const amount = transactionAmountFromRow(row);
-    const fingerprint = importedIdFingerprintParts(row, date).join("|");
+    const fingerprintParts = importedIdFingerprintParts(row, date);
+    const fingerprint = fingerprintParts.join("|");
     const occurrence = (occurrences.get(fingerprint) ?? 0) + 1;
     occurrences.set(fingerprint, occurrence);
 
@@ -231,8 +218,8 @@ export function mapCsvImportRowsToImportTransactions(
       imported_payee: payeeName,
     };
 
-    if (includeImportedId) {
-      transaction.imported_id = buildImportedId(row, date, occurrence);
+    if (includeImportId) {
+      transaction.imported_id = buildImportedId(fingerprintParts, occurrence);
     }
 
     if (notes) {

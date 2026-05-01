@@ -51,6 +51,7 @@ test("maps csv import rows to Actual import transactions", () => {
       "05/04/2026,Coffee Shop,Morning caffeine,4.50,",
       "05/04/2026,Coffee Shop,Morning caffeine,4.50,",
       '2026-04-06,Salary,,,"$1,234.56"',
+      "2026-04-07,Interest,,,.50",
     ].join("\n"),
     {
       accountId: "acct-main",
@@ -84,6 +85,14 @@ test("maps csv import rows to Actual import transactions", () => {
       payee_name: "Salary",
       imported_payee: "Salary",
       imported_id: "csv|2026-04-06|Salary||$1,234.56",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-07",
+      amount: 50,
+      payee_name: "Interest",
+      imported_payee: "Interest",
+      imported_id: "csv|2026-04-07|Interest||.50",
     },
   ]);
 });
@@ -167,7 +176,7 @@ test("can omit imported_id when requested", () => {
     {
       accountId: "acct-main",
       dateFormat: "DD/MM/YYYY",
-      includeImportedId: false,
+      includeImportId: false,
     },
   );
 
@@ -210,6 +219,32 @@ test("omits blank notes", () => {
       imported_id: "csv|2026-04-05|Interest||1.23",
     },
   ]);
+});
+
+test("rejects signed debit and credit amounts", () => {
+  assert.throws(
+    () =>
+      parseCsvImportToImportTransactions(
+        [
+          "Date,Payee,Notes,Debit,Credit",
+          "2026-04-05,Refund,,,-1.00",
+        ].join("\n"),
+        { accountId: "acct-main" },
+      ),
+    /non-negative amount without signs/,
+  );
+
+  assert.throws(
+    () =>
+      parseCsvImportToImportTransactions(
+        [
+          "Date,Payee,Notes,Debit,Credit",
+          '2026-04-05,Coffee Shop,,"(4.50)",',
+        ].join("\n"),
+        { accountId: "acct-main" },
+      ),
+    /non-negative amount without signs/,
+  );
 });
 
 test("rejects rows with both debit and credit populated", () => {
