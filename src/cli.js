@@ -25,7 +25,6 @@ import {
   resolveDateRange,
 } from "./reporting.js";
 import { normalizeParsedQifTransactions } from "./qif.js";
-import { parseStGeorgeCsvToImportTransactions } from "./st-george.js";
 import { renderCliTable, toHtml, toTsv } from "./table-rendering.js";
 import { commandMakeTransfer } from "./transfer.js";
 import { commandTransactions } from "./transactions.js";
@@ -576,23 +575,6 @@ function buildProgram() {
       });
     });
 
-  program
-    .command("st-george-import")
-    .description("Import a St.George CSV into an Actual account.")
-    .argument("<account>")
-    .argument("<csv-path>")
-    .option("--dry-run", "preview reconciliation without writing transactions")
-    .option("--json", "print mapped ImportTransactionEntity objects and exit")
-    .addHelpText("after", ACCOUNT_MATCHING_HELP)
-    .action(async (account, csvPath, options) => {
-      await commandStGeorgeImport({
-        account,
-        csvPath,
-        dryRun: options.dryRun ?? false,
-        json: options.json ?? false,
-      });
-    });
-
   return program;
 }
 
@@ -698,43 +680,6 @@ async function commandCsvImport(args) {
       accountId: account.id,
       dateFormat,
       includeImportId: args.includeImportId,
-    });
-
-    if (args.json) {
-      console.log(JSON.stringify(transactions, null, 2));
-      return;
-    }
-
-    const result = await actualApi.importTransactions(account.id, transactions, {
-      defaultCleared: true,
-      dryRun: args.dryRun,
-    });
-
-    if (!args.dryRun) {
-      await actualApi.sync();
-    }
-
-    console.log(
-      renderImportResult({
-        account: {
-          id: account.id,
-          name: account.name ?? "?",
-        },
-        mapped: transactions.length,
-        dryRun: args.dryRun,
-        result,
-      }),
-    );
-  });
-}
-
-async function commandStGeorgeImport(args) {
-  await withActual(async ({ actualApi }) => {
-    const accounts = await actualApi.getAccounts();
-    const account = resolveImportAccount(accounts, args.account);
-    const csvText = await readFile(args.csvPath, "utf8");
-    const transactions = parseStGeorgeCsvToImportTransactions(csvText, {
-      accountId: account.id,
     });
 
     if (args.json) {

@@ -41,8 +41,6 @@ Commands:
                                 Import a QIF file into an Actual account.
   csv-import [options] <account> <csv-path>
                                 Import a generic CSV into an Actual account.
-  st-george-import [options] <account> <csv-path>
-                                Import a St.George CSV into an Actual account.
   help [command]                display help for command
 
 Environment:
@@ -167,28 +165,6 @@ Optional header:
 `Date` accepts either `YYYY-MM-DD` or your budget date format. `Debit` and `Credit` must be non-negative amounts without signs. `Notes` are imported into transaction notes, but are not included in `imported_id`. When `Balance` is present, it is used to strengthen row uniqueness and `imported_id` stability.
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
-
-`<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
-
-## St.George Import
-
-Preview the mapped `ImportTransactionEntity` objects:
-
-```bash
-abctl st-george-import <account> path/to/st-george.csv --json
-```
-
-Preview Actual's reconciliation result without writing:
-
-```bash
-abctl st-george-import <account> path/to/st-george.csv --dry-run
-```
-
-Import the CSV into an account:
-
-```bash
-abctl st-george-import <account> path/to/st-george.csv
-```
 
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
 

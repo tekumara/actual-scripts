@@ -42,7 +42,6 @@ For most CLI changes, start here in order:
 - `src/transfer.js` — transfer matching/linking
 - `src/split.js` — split transaction workflow
 - `src/qif.js` — QIF import parsing/normalization
-- `src/st-george.js` — St.George CSV import parsing/mapping
 
 ### Shared helpers
 
@@ -110,7 +109,6 @@ Run smoke tests:
 
 ```bash
 npm run smoke:transfer
-npm run smoke:st-george
 npm run smoke:qif
 npm run smoke:split
 ```
@@ -119,7 +117,6 @@ Write-enabled smoke variants:
 
 ```bash
 npm run smoke:transfer:write
-npm run smoke:st-george:write
 npm run smoke:qif:write
 ```
 
