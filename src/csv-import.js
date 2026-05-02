@@ -220,7 +220,13 @@ export function parseCsvImport(text) {
 
 export function mapCsvImportRowsToImportTransactions(
   rows,
-  { accountId, dateFormat = null, includeImportId = true, categoryResolver = null } = {},
+  {
+    accountId,
+    dateFormat = null,
+    includeImportId = true,
+    includeImportedPayee = true,
+    categoryResolver = null,
+  } = {},
 ) {
   const normalizedAccountId = String(accountId ?? "").trim();
   if (!normalizedAccountId) {
@@ -245,8 +251,11 @@ export function mapCsvImportRowsToImportTransactions(
       date,
       amount,
       payee_name: payeeName,
-      imported_payee: payeeName,
     };
+
+    if (includeImportedPayee) {
+      transaction.imported_payee = payeeName;
+    }
 
     if (includeImportId) {
       transaction.imported_id = buildImportedId(fingerprintParts, occurrence);

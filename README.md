@@ -146,8 +146,14 @@ abctl csv-import <account> path/to/import.csv --dry-run
 # Preview/import without imported_id so Actual relies on fuzzy matching
 abctl csv-import <account> path/to/import.csv --dry-run --no-import-id
 
+# Preview/import with UI-style imported_payee derivation
+abctl csv-import <account> path/to/import.csv --dry-run --no-import-id --no-imported-payee
+
 # Preview/import categories from the Category column when they match Actual categories
 abctl csv-import <account> path/to/import.csv --dry-run --import-category
+
+# Fully mimic Actual UI CSV import matching
+abctl csv-import <account> path/to/import.csv --dry-run --no-import-id --no-imported-payee --import-category
 
 # Import the CSV into an account
 abctl csv-import <account> path/to/import.csv
@@ -171,7 +177,11 @@ Optional headers:
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
 
-Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. `SubCategory` is accepted as a CSV column but ignored, category matching is exact and case-sensitive, and category ids are not resolved. Unresolved category text is sent as-is in both previews and real imports so CLI final import follows the same category behavior as CLI dry-run. Categories are not created automatically.
+Use `--no-imported-payee` to omit `imported_payee` and let Actual derive it from `payee_name`, matching the UI CSV import path more closely. This can surface case-normalization updates that are otherwise hidden when the CLI sends the raw CSV payee as `imported_payee`.
+
+Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. Category import is enabled by default in the Actual UI CSV importer; pass `--import-category` in the CLI when you want that behavior. Category matching is exact and case-sensitive, and [unresolved category text is sent as-is](https://github.com/actualbudget/actual/issues/7677). Categories are not created automatically.
+
+To fully mimic Actual UI CSV import matching, combine `--no-import-id --no-imported-payee --import-category`. Remove them to have more stricter matching, and less false positives during matching.
 
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
 

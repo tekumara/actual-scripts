@@ -58,6 +58,7 @@ const CSV_IMPORT_HELP = [
   "",
   "Matching:",
   "  Use --no-import-id to omit imported_id and rely on Actual's fuzzy matching.",
+  "  Use --no-imported-payee to let Actual derive imported_payee like UI CSV import.",
   "",
   "Date parsing:",
   "  Ambiguous CSV dates use the budget's dateFormat preference when available.",
@@ -565,6 +566,7 @@ function buildProgram() {
     .option("--dry-run", "preview reconciliation without writing transactions")
     .option("--json", "print mapped ImportTransactionEntity objects and exit")
     .option("--no-import-id", "omit imported_id and rely on Actual fuzzy matching")
+    .option("--no-imported-payee", "omit imported_payee and let Actual derive it from payee_name")
     .option("--import-category", "map CSV Category values to existing Actual category names")
     .addHelpText("after", CSV_IMPORT_HELP)
     .action(async (account, csvPath, options) => {
@@ -574,6 +576,7 @@ function buildProgram() {
         dryRun: options.dryRun ?? false,
         json: options.json ?? false,
         includeImportId: options.importId !== false,
+        includeImportedPayee: options.importedPayee !== false,
         importCategory: options.importCategory ?? false,
       });
     });
@@ -696,6 +699,7 @@ async function commandCsvImport(args) {
       accountId: account.id,
       dateFormat,
       includeImportId: args.includeImportId,
+      includeImportedPayee: args.includeImportedPayee,
       categoryResolver: categoryData
         ? buildCsvImportCategoryResolver({
             ...categoryData,

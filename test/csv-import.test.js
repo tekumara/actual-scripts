@@ -322,6 +322,30 @@ test("ignores Notes when building imported ids", () => {
   ]);
 });
 
+test("can omit imported_payee when requested", () => {
+  const actual = parseCsvImportToImportTransactions(
+    [
+      "Date,Payee,Notes,Debit,Credit",
+      "05/04/2026,Dodo Services 00000000P-22267650,,25.00,",
+    ].join("\n"),
+    {
+      accountId: "acct-main",
+      dateFormat: "DD/MM/YYYY",
+      includeImportedPayee: false,
+      includeImportId: false,
+    },
+  );
+
+  assert.deepEqual(actual, [
+    {
+      account: "acct-main",
+      date: "2026-04-05",
+      amount: -2500,
+      payee_name: "Dodo Services 00000000P-22267650",
+    },
+  ]);
+});
+
 test("can omit imported_id when requested", () => {
   const actual = parseCsvImportToImportTransactions(
     [
