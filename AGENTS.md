@@ -134,24 +134,24 @@ If you add a new flag, include at least one concrete command example in the READ
 
 ## Commit conventions
 
-Use short conventional commit messages:
-- `feat: ...` for user-visible features or new CLI capabilities
-- `fix: ...` for bug fixes or behavior corrections
-- `docs: ...` for documentation-only changes
-- `test: ...` for test-only changes
-- `refactor: ...` for internal restructures without behavior changes
-- `chore: ...` for maintenance tasks
+Use short conventional commit messages with the affected module as the scope:
+- `feat(<module>): ...` for user-visible features or new CLI capabilities
+- `fix(<module>): ...` for bug fixes or behavior corrections
+- `docs(<module>): ...` for documentation-only changes
+- `test(<module>): ...` for test-only changes
+- `refactor(<module>): ...` for internal restructures without behavior changes
+- `chore(<module>): ...` for maintenance tasks
 
 Style:
 - keep the summary in imperative mood
 - keep it specific to the change
 - prefer lowercase after the colon
-- omit scope unless it adds useful clarity
+- include the most relevant module in the scope, such as `transactions`, `csv-import`, `qif`, `split`, or `cli`
 
 Examples:
-- `feat: add --tsv output for transactions list`
-- `fix: respect budget date format in split lookup`
-- `docs: document transactions --tsv output`
+- `feat(transactions): add --tsv output for transactions list`
+- `fix(split): respect budget date format in split lookup`
+- `docs(transactions): document --tsv output`
 
 ## Practical tips for agents
 
