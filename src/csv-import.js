@@ -172,7 +172,7 @@ function isTombstoned(value) {
   return value === true || value === 1 || value === "1";
 }
 
-export function buildCsvImportCategoryResolver({ categories = [] } = {}) {
+export function buildCsvImportCategoryResolver({ categories = [], keepUnresolved = false } = {}) {
   const liveCategories = categories.filter((category) => !isTombstoned(category.tombstone));
 
   return (row) => {
@@ -183,8 +183,8 @@ export function buildCsvImportCategoryResolver({ categories = [] } = {}) {
 
     let match = null;
     for (const category of liveCategories) {
-      // Match Actual UI import behavior: category ids are not accepted here;
-      // only exact category-name matches are resolved.
+      // Match Actual UI category-name resolution. Category ids are not
+      // resolved here; if no category name matches, the raw CSV text is kept.
       if (category.id === categoryName) {
         continue;
       }
@@ -193,7 +193,7 @@ export function buildCsvImportCategoryResolver({ categories = [] } = {}) {
       }
     }
 
-    return match ?? undefined;
+    return match ?? (keepUnresolved ? categoryName : undefined);
   };
 }
 

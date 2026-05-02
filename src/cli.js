@@ -696,7 +696,12 @@ async function commandCsvImport(args) {
       accountId: account.id,
       dateFormat,
       includeImportId: args.includeImportId,
-      categoryResolver: categoryData ? buildCsvImportCategoryResolver(categoryData) : null,
+      categoryResolver: categoryData
+        ? buildCsvImportCategoryResolver({
+            ...categoryData,
+            keepUnresolved: args.dryRun,
+          })
+        : null,
     });
 
     if (args.json) {

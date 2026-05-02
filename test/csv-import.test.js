@@ -189,7 +189,7 @@ test("maps CSV Category to Actual category ids when requested", () => {
   ]);
 });
 
-test("omits tombstoned and unresolved CSV categories like Actual UI import", () => {
+test("omits tombstoned and unresolved CSV categories like Actual UI final import", () => {
   const categoryResolver = buildCsvImportCategoryResolver({
     categories: [
       { id: "cat-groceries", name: "Groceries", tombstone: false },
@@ -231,6 +231,57 @@ test("omits tombstoned and unresolved CSV categories like Actual UI import", () 
       amount: -100,
       payee_name: "Store",
       imported_payee: "Store",
+      imported_id: "csv|2026-04-07|Store|1.00|",
+    },
+  ]);
+});
+
+test("keeps raw unresolved CSV categories like Actual UI preview", () => {
+  const categoryResolver = buildCsvImportCategoryResolver({
+    categories: [
+      { id: "cat-groceries", name: "Groceries", tombstone: false },
+      { id: "cat-archived", name: "Archived", tombstone: true },
+    ],
+    keepUnresolved: true,
+  });
+
+  const actual = parseCsvImportToImportTransactions(
+    [
+      "Date,Payee,Notes,Debit,Credit,Category",
+      "2026-04-05,Old Thing,,1.00,,Archived",
+      "2026-04-06,Coffee Shop,Morning caffeine,4.50,,Deposits",
+      "2026-04-07,Store,,1.00,,cat-groceries",
+    ].join("\n"),
+    { accountId: "acct-main", categoryResolver },
+  );
+
+  assert.deepEqual(actual, [
+    {
+      account: "acct-main",
+      date: "2026-04-05",
+      amount: -100,
+      payee_name: "Old Thing",
+      imported_payee: "Old Thing",
+      category: "Archived",
+      imported_id: "csv|2026-04-05|Old Thing|1.00|",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-06",
+      amount: -450,
+      payee_name: "Coffee Shop",
+      imported_payee: "Coffee Shop",
+      category: "Deposits",
+      notes: "Morning caffeine",
+      imported_id: "csv|2026-04-06|Coffee Shop|4.50|",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-07",
+      amount: -100,
+      payee_name: "Store",
+      imported_payee: "Store",
+      category: "cat-groceries",
       imported_id: "csv|2026-04-07|Store|1.00|",
     },
   ]);
