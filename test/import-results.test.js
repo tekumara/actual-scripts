@@ -9,6 +9,10 @@ import {
 
 const account = { id: "acct-602", name: "St George 602" };
 
+function countOccurrences(value, pattern) {
+  return [...value.matchAll(pattern)].length;
+}
+
 const result = {
   errors: [{ message: "Duplicate imported_id" }],
   added: ["txn-1", "txn-2"],
@@ -55,20 +59,16 @@ test("buildImportSummaryTable reports requested import counts", () => {
   );
 });
 
-test("buildPreviewMatchesTable projects preview matches into table rows", () => {
+test("buildPreviewMatchesTable only projects non-ignored preview matches into table rows", () => {
   const table = buildPreviewMatchesTable(result);
 
-  assert.equal(table.title, "Preview matches");
-  assert.deepEqual(
-    table.rows.map((row) => row.cells),
-    [
-      ["2025-10-17", "Hellofresh", "-83.99", "true"],
-      ["2025-10-18", "Xero Salary", "14,499.56", "false"],
-    ],
-  );
+  assert.equal(table.title, "Updated");
+  assert.deepEqual(table.rows.map((row) => row.cells), [
+    ["2025-10-18", "Xero Salary", "14,499.56", "false"],
+  ]);
 });
 
-test("renderImportResult includes summary, preview table, and error messages", () => {
+test("renderImportResult includes summary, non-ignored preview table, and error messages", () => {
   const rendered = renderImportResult({
     account,
     mapped: 12,
@@ -78,8 +78,9 @@ test("renderImportResult includes summary, preview table, and error messages", (
 
   assert.match(rendered, /Import result/);
   assert.match(rendered, /Mapped transactions/);
-  assert.match(rendered, /Preview matches/);
-  assert.match(rendered, /Hellofresh/);
+  assert.equal(countOccurrences(rendered, /Preview matches/g), 1);
+  assert.equal(countOccurrences(rendered, /Updated/g), 2);
+  assert.doesNotMatch(rendered, /Hellofresh/);
   assert.match(rendered, /Xero Salary/);
   assert.match(rendered, /Duplicate imported_id/);
 });
@@ -99,6 +100,35 @@ test("renderImportResult omits updated preview section when there are no updated
 
   assert.match(rendered, /Import preview/);
   assert.match(rendered, /Mapped transactions/);
-  assert.doesNotMatch(rendered, /Matched imported transactions considered during reconciliation/);
+  assert.equal(countOccurrences(rendered, /Preview matches/g), 1);
+  assert.equal(countOccurrences(rendered, /Updated/g), 1);
   assert.doesNotMatch(rendered, /No matched imported transactions/);
+});
+
+test("renderImportResult omits preview table when every preview match is ignored", () => {
+  const rendered = renderImportResult({
+    account,
+    mapped: 12,
+    dryRun: true,
+    result: {
+      errors: [],
+      added: [],
+      updated: [],
+      updatedPreview: [
+        {
+          transaction: {
+            date: "2025-10-17",
+            imported_payee: "Hellofresh",
+            amount: -8399,
+          },
+          ignored: true,
+        },
+      ],
+    },
+  });
+
+  assert.match(rendered, /Import preview/);
+  assert.equal(countOccurrences(rendered, /Preview matches/g), 1);
+  assert.equal(countOccurrences(rendered, /Updated/g), 1);
+  assert.doesNotMatch(rendered, /Hellofresh/);
 });

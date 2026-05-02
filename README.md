@@ -177,7 +177,7 @@ Optional headers:
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
 
-Use `--no-imported-payee` to omit `imported_payee` and let Actual derive it from `payee_name`, matching the UI CSV import path more closely. This can surface case-normalization updates that are otherwise hidden when the CLI sends the raw CSV payee as `imported_payee`.
+Use `--no-imported-payee` to omit `imported_payee` and let Actual derive it from `payee_name`, matching the UI CSV import path more closely. This can surface [case-normalization updates](https://github.com/actualbudget/actual/issues/7678) that are otherwise hidden when the CLI sends the raw CSV payee as `imported_payee`.
 
 Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. Category import is enabled by default in the Actual UI CSV importer; pass `--import-category` in the CLI when you want that behavior. Category matching is exact and case-sensitive, and [unresolved category text is sent as-is](https://github.com/actualbudget/actual/issues/7677). Categories are not created automatically.
 

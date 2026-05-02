@@ -27,15 +27,17 @@ export function buildImportSummaryTable({ account, mapped, dryRun, result }) {
 }
 
 export function buildPreviewMatchesTable(result) {
+  const visiblePreviewMatches = result.updatedPreview.filter((entry) => !entry.ignored);
+
   return {
-    title: "Preview matches",
+    title: "Updated",
     columns: [
       { label: "Date", align: "left" },
       { label: "Imported payee", align: "left" },
       { label: "Amount", align: "right" },
       { label: "Ignored", align: "left" },
     ],
-    rows: result.updatedPreview.map((entry) =>
+    rows: visiblePreviewMatches.map((entry) =>
       makeRow([
         entry.transaction?.date ?? "",
         entry.transaction?.imported_payee ?? entry.transaction?.payee_name ?? "",
@@ -58,9 +60,10 @@ function renderErrors(errors) {
 
 export function renderImportResult({ account, mapped, dryRun, result }) {
   const sections = [renderCliTable(buildImportSummaryTable({ account, mapped, dryRun, result }))];
+  const previewMatchesTable = buildPreviewMatchesTable(result);
 
-  if (result.updatedPreview.length > 0) {
-    sections.push(renderCliTable(buildPreviewMatchesTable(result)));
+  if (previewMatchesTable.rows.length > 0) {
+    sections.push(renderCliTable(previewMatchesTable));
   }
 
   const errorSection = renderErrors(result.errors);
