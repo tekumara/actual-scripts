@@ -1,7 +1,7 @@
 import { normalizeDateInput } from "./date-utils.js";
 
 const REQUIRED_HEADERS = ["Date", "Payee", "Notes", "Debit", "Credit"];
-const OPTIONAL_HEADERS = ["Balance"];
+const OPTIONAL_HEADERS = ["Balance", "Category", "SubCategory"];
 const CANONICAL_HEADERS = new Map(
   [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS].map((header) => [header.toLowerCase(), header]),
 );
@@ -168,6 +168,35 @@ function buildImportedId(fingerprintParts, occurrence) {
   return parts.join("|");
 }
 
+function isTombstoned(value) {
+  return value === true || value === 1 || value === "1";
+}
+
+export function buildCsvImportCategoryResolver({ categories = [] } = {}) {
+  const liveCategories = categories.filter((category) => !isTombstoned(category.tombstone));
+
+  return (row) => {
+    const categoryName = trimToUndefined(row.Category);
+    if (!categoryName) {
+      return undefined;
+    }
+
+    let match = null;
+    for (const category of liveCategories) {
+      // Match Actual UI import behavior: category ids are not accepted here;
+      // only exact category-name matches are resolved.
+      if (category.id === categoryName) {
+        continue;
+      }
+      if (category.name === categoryName) {
+        match = category.id;
+      }
+    }
+
+    return match ?? undefined;
+  };
+}
+
 export function parseCsvImport(text) {
   const rows = parseCsv(String(text ?? ""));
   if (rows.length === 0) {
@@ -191,7 +220,7 @@ export function parseCsvImport(text) {
 
 export function mapCsvImportRowsToImportTransactions(
   rows,
-  { accountId, dateFormat = null, includeImportId = true } = {},
+  { accountId, dateFormat = null, includeImportId = true, categoryResolver = null } = {},
 ) {
   const normalizedAccountId = String(accountId ?? "").trim();
   if (!normalizedAccountId) {
@@ -205,6 +234,7 @@ export function mapCsvImportRowsToImportTransactions(
     const payeeName = trimRequired(row.Payee, row.__line, "Payee");
     const notes = trimToUndefined(row.Notes);
     const amount = transactionAmountFromRow(row);
+    const category = categoryResolver ? trimToUndefined(categoryResolver(row)) : undefined;
     const fingerprintParts = importedIdFingerprintParts(row, date);
     const fingerprint = fingerprintParts.join("|");
     const occurrence = (occurrences.get(fingerprint) ?? 0) + 1;
@@ -220,6 +250,10 @@ export function mapCsvImportRowsToImportTransactions(
 
     if (includeImportId) {
       transaction.imported_id = buildImportedId(fingerprintParts, occurrence);
+    }
+
+    if (category) {
+      transaction.category = category;
     }
 
     if (notes) {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildCsvImportCategoryResolver,
   mapCsvImportRowsToImportTransactions,
   parseCsvImport,
   parseCsvImportToImportTransactions,
@@ -128,6 +129,109 @@ test("uses Balance to strengthen csv row uniqueness and imported ids", () => {
       imported_payee: "Coffee Shop",
       notes: "Morning caffeine",
       imported_id: "csv|2026-04-05|Coffee Shop|4.50||95.50",
+    },
+  ]);
+});
+
+test("maps CSV Category to Actual category ids when requested", () => {
+  const categoryResolver = buildCsvImportCategoryResolver({
+    categories: [
+      {
+        id: "cat-groceries",
+        name: "Groceries",
+        tombstone: false,
+      },
+      {
+        id: "cat-income",
+        name: "Income",
+        tombstone: false,
+      },
+      {
+        id: "cat-archived",
+        name: "Archived",
+        tombstone: true,
+      },
+    ],
+  });
+  const actual = parseCsvImportToImportTransactions(
+    [
+      "Date,Payee,Notes,Debit,Credit,Category,SubCategory",
+      "05/04/2026,Coffee Shop,Morning caffeine,4.50,,Groceries,Ignored SubCategory",
+      "05/04/2026,Salary,,,1234.56,Income,",
+    ].join("\n"),
+    {
+      accountId: "acct-main",
+      dateFormat: "DD/MM/YYYY",
+      categoryResolver,
+    },
+  );
+
+  assert.deepEqual(actual, [
+    {
+      account: "acct-main",
+      date: "2026-04-05",
+      amount: -450,
+      payee_name: "Coffee Shop",
+      imported_payee: "Coffee Shop",
+      category: "cat-groceries",
+      notes: "Morning caffeine",
+      imported_id: "csv|2026-04-05|Coffee Shop|4.50|",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-05",
+      amount: 123456,
+      payee_name: "Salary",
+      imported_payee: "Salary",
+      category: "cat-income",
+      imported_id: "csv|2026-04-05|Salary||1234.56",
+    },
+  ]);
+});
+
+test("omits tombstoned and unresolved CSV categories like Actual UI import", () => {
+  const categoryResolver = buildCsvImportCategoryResolver({
+    categories: [
+      { id: "cat-groceries", name: "Groceries", tombstone: false },
+      { id: "cat-archived", name: "Archived", tombstone: true },
+    ],
+  });
+
+  const actual = parseCsvImportToImportTransactions(
+    [
+      "Date,Payee,Notes,Debit,Credit,Category",
+      "2026-04-05,Old Thing,,1.00,,Archived",
+      "2026-04-06,Coffee Shop,Morning caffeine,4.50,,Deposits",
+      "2026-04-07,Store,,1.00,,cat-groceries",
+    ].join("\n"),
+    { accountId: "acct-main", categoryResolver },
+  );
+
+  assert.deepEqual(actual, [
+    {
+      account: "acct-main",
+      date: "2026-04-05",
+      amount: -100,
+      payee_name: "Old Thing",
+      imported_payee: "Old Thing",
+      imported_id: "csv|2026-04-05|Old Thing|1.00|",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-06",
+      amount: -450,
+      payee_name: "Coffee Shop",
+      imported_payee: "Coffee Shop",
+      notes: "Morning caffeine",
+      imported_id: "csv|2026-04-06|Coffee Shop|4.50|",
+    },
+    {
+      account: "acct-main",
+      date: "2026-04-07",
+      amount: -100,
+      payee_name: "Store",
+      imported_payee: "Store",
+      imported_id: "csv|2026-04-07|Store|1.00|",
     },
   ]);
 });

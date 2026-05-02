@@ -5,7 +5,7 @@ import { execFile as execFileCallback } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, unlink, writeFile } from "node:fs/promises";
 import { commandAccounts } from "./accounts.js";
-import { parseCsvImportToImportTransactions } from "./csv-import.js";
+import { buildCsvImportCategoryResolver, parseCsvImportToImportTransactions } from "./csv-import.js";
 import { normalizeDateInput } from "./date-utils.js";
 import { resolveImportAccount } from "./import-account.js";
 import { renderImportResult } from "./import-results.js";
@@ -51,9 +51,10 @@ const CSV_IMPORT_HELP = [
   "",
   "CSV columns:",
   "  Required headers: Date, Payee, Notes, Debit, Credit.",
-  "  Optional header: Balance (used to strengthen row uniqueness and imported_id stability).",
+  "  Optional headers: Balance (used to strengthen row uniqueness and imported_id stability), Category, SubCategory.",
   "  Debit and Credit must be non-negative amounts without signs.",
   "  Notes are imported as transaction notes but excluded from imported_id.",
+  "  Use --import-category to map Category values to existing Actual category names.",
   "",
   "Matching:",
   "  Use --no-import-id to omit imported_id and rely on Actual's fuzzy matching.",
@@ -557,13 +558,14 @@ function buildProgram() {
   program
     .command("csv-import")
     .description(
-      "Import a generic CSV with Date, Payee, Notes, Debit, and Credit columns into an Actual account. Balance is optional and improves duplicate detection.",
+      "Import a generic CSV with Date, Payee, Notes, Debit, and Credit columns into an Actual account. Balance, Category, and SubCategory are optional.",
     )
     .argument("<account>")
     .argument("<csv-path>")
     .option("--dry-run", "preview reconciliation without writing transactions")
     .option("--json", "print mapped ImportTransactionEntity objects and exit")
     .option("--no-import-id", "omit imported_id and rely on Actual fuzzy matching")
+    .option("--import-category", "map CSV Category values to existing Actual category names")
     .addHelpText("after", CSV_IMPORT_HELP)
     .action(async (account, csvPath, options) => {
       await commandCsvImport({
@@ -572,6 +574,7 @@ function buildProgram() {
         dryRun: options.dryRun ?? false,
         json: options.json ?? false,
         includeImportId: options.importId !== false,
+        importCategory: options.importCategory ?? false,
       });
     });
 
@@ -668,18 +671,32 @@ async function commandReport(args) {
   });
 }
 
+async function fetchCsvImportCategoryData(actualApi) {
+  const categoriesResult = await actualApi.runQuery(
+    actualApi.q("categories").filter({ tombstone: false }).select("*"),
+  );
+
+  return {
+    categories: extractQueryData(categoriesResult),
+  };
+}
+
 async function commandCsvImport(args) {
   await withActual(async ({ actualApi }) => {
-    const [accounts, dateFormat, csvText] = await Promise.all([
+    const [accounts, dateFormat, csvText, categoryData] = await Promise.all([
       actualApi.getAccounts(),
       fetchBudgetDateFormat(actualApi),
       readFile(args.csvPath, "utf8"),
+      args.importCategory
+        ? fetchCsvImportCategoryData(actualApi)
+        : Promise.resolve(null),
     ]);
     const account = resolveImportAccount(accounts, args.account);
     const transactions = parseCsvImportToImportTransactions(csvText, {
       accountId: account.id,
       dateFormat,
       includeImportId: args.includeImportId,
+      categoryResolver: categoryData ? buildCsvImportCategoryResolver(categoryData) : null,
     });
 
     if (args.json) {

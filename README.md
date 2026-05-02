@@ -146,6 +146,9 @@ abctl csv-import <account> path/to/import.csv --dry-run
 # Preview/import without imported_id so Actual relies on fuzzy matching
 abctl csv-import <account> path/to/import.csv --dry-run --no-import-id
 
+# Preview/import categories from the Category column when they match Actual categories
+abctl csv-import <account> path/to/import.csv --dry-run --import-category
+
 # Import the CSV into an account
 abctl csv-import <account> path/to/import.csv
 ```
@@ -158,13 +161,17 @@ The CSV must contain these headers:
 - `Debit`
 - `Credit`
 
-Optional header:
+Optional headers:
 
 - `Balance`
+- `Category`
+- `SubCategory`
 
 `Date` accepts either `YYYY-MM-DD` or your budget date format. `Debit` and `Credit` must be non-negative amounts without signs. `Notes` are imported into transaction notes, but are not included in `imported_id`. When `Balance` is present, it is used to strengthen row uniqueness and `imported_id` stability.
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
+
+Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. This follows the Actual UI import behavior: `SubCategory` is accepted as a CSV column but ignored, category matching is exact and case-sensitive, category ids are not accepted, and unresolved categories are imported as uncategorized. Categories are not created automatically.
 
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
 
