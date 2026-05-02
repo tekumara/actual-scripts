@@ -189,7 +189,7 @@ test("maps CSV Category to Actual category ids when requested", () => {
   ]);
 });
 
-test("omits tombstoned and unresolved CSV categories like Actual UI final import", () => {
+test("omits tombstoned and unresolved CSV categories unless keepUnresolved is enabled", () => {
   const categoryResolver = buildCsvImportCategoryResolver({
     categories: [
       { id: "cat-groceries", name: "Groceries", tombstone: false },
@@ -236,7 +236,7 @@ test("omits tombstoned and unresolved CSV categories like Actual UI final import
   ]);
 });
 
-test("keeps raw unresolved CSV categories like Actual UI preview", () => {
+test("keeps raw unresolved CSV categories when keepUnresolved is enabled", () => {
   const categoryResolver = buildCsvImportCategoryResolver({
     categories: [
       { id: "cat-groceries", name: "Groceries", tombstone: false },

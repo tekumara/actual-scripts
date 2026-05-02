@@ -699,7 +699,7 @@ async function commandCsvImport(args) {
       categoryResolver: categoryData
         ? buildCsvImportCategoryResolver({
             ...categoryData,
-            keepUnresolved: args.dryRun,
+            keepUnresolved: true,
           })
         : null,
     });

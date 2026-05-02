@@ -171,7 +171,7 @@ Optional headers:
 
 Use `--no-import-id` to omit `imported_id` entirely and rely on Actual's fuzzy matching instead. This mimics how imports via the UI work.
 
-Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. This follows Actual UI import behavior: `SubCategory` is accepted as a CSV column but ignored, category matching is exact and case-sensitive, and category ids are not resolved. In `--dry-run` previews, unresolved category text is sent as-is so preview matching mirrors the UI. In real imports, unresolved categories are imported as uncategorized. Categories are not created automatically.
+Use `--import-category` to map `Category` values to existing Actual category names and include the matched category id in reconciliation. `SubCategory` is accepted as a CSV column but ignored, category matching is exact and case-sensitive, and category ids are not resolved. Unresolved category text is sent as-is in both previews and real imports so CLI final import follows the same category behavior as CLI dry-run. Categories are not created automatically.
 
 `<account>` may be either the Actual account id or account name. Matching prefers exact id, then exact name, then unique case-insensitive name, then a unique case-insensitive substring match. If the match is ambiguous, the command fails and asks you to use the id.
 
