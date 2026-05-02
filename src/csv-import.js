@@ -224,7 +224,7 @@ export function mapCsvImportRowsToImportTransactions(
     accountId,
     dateFormat = null,
     includeImportId = true,
-    includeImportedPayee = true,
+    rawImportedPayee = false,
     categoryResolver = null,
   } = {},
 ) {
@@ -253,7 +253,7 @@ export function mapCsvImportRowsToImportTransactions(
       payee_name: payeeName,
     };
 
-    if (includeImportedPayee) {
+    if (rawImportedPayee) {
       transaction.imported_payee = payeeName;
     }
 
